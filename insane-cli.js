@@ -43,8 +43,9 @@ if (argv3 != null) {
         if (argv3 === '-url' || argv3 === '/url') {
             request(argv4, function (error, response, body) {
                 if (response.statusCode === 200) { // only process url with statusCode 200
-                    let tempURL = new Data().getURLs(body)
-                    printURLStatus(tempURL)
+                    
+                    new Data(body).getURLandPrint()
+
                 } else {
                     console.log('Bad link'.red)
                 }
@@ -87,7 +88,6 @@ if (argv3 != null) {
                         await fs.promises.readFile(filename)
                             .then(function (data) {
 
-                                // let finalURLs = getURLs(data)
                                 let finalURLs = new Data().getURLs(data)
                                 printURLStatusInJSON(finalURLs)
 
@@ -114,9 +114,7 @@ if (argv3 != null) {
                         await fs.promises.readFile(filename)
                             .then(function (data) {
 
-                                // let finalURLs = getURLs(data)
-                                let finalURLs = new Data().getURLs(data)
-                                printURLStatusByFlag(finalURLs, argv3)
+                                new Data(data).printURLStatusByFlag(argv3) // argv3: flag (--good, etc)
 
                             })
                             .catch(function (error) {
@@ -129,9 +127,6 @@ if (argv3 != null) {
             } catch (err) {
                 console.error(err)
             }
-
-
-
 
         } else if (argv4 === '-i' || argv4 === '--ignore') {
             readIgnoreFile().then(lists => {
@@ -183,35 +178,9 @@ if (argv3 != null) {
     }
 
 } else {
-    showHelp()
+    util.showHelp()
 }
 
-
-function printURLStatus(urls) {
-
-    for (let i = urls.length; i--;) {
-        try {
-            request(urls[i], { method: 'HEAD', timeout: 1800 }, function (error, response, body) {
-
-                //console.error('error:', error);
-                let status = response && response.statusCode
-                if (status !== null) {
-                    if (status === 200) {
-                        console.log('[' + status + ']GOOD - ' + urls[i].green)
-                    } else if (status === 400 || status === 404) {
-                        console.log('[' + status + ']BAD - ' + urls[i].red)
-                    } else if (status === 301 || status === 307 || status === 308) {
-                        console.log('[' + status + ']REDIRECT - ' + urls[i].blue)
-                    } else {
-                        console.log('UNKNOWN - ' + urls[i].grey)
-                    }
-                }
-            })
-        } catch (error) {
-            console.error('WTF - ' + urls[i].yellow)
-        }
-    }
-}
 
 function printURLStatusByFlag(urls, flag) {
 
@@ -291,16 +260,4 @@ function getObj(input) {
             //console.error('WTF - ' + urls[i].yellow)
         }
     })
-}
-
-
-function showHelp() {
-    console.log('HOW TO USE'.bgGreen)
-    console.log('------------------------------------------------'.blue)
-    console.log(' insane-cli'.green + ' for instructions'.blue)
-    console.log(' insane-cli [--version][/v]'.green + ' to check current version'.blue)
-    console.log(' insane-cli [file-path]'.green + ' process a file'.blue)
-    console.log(' insane-cli -url [full-url-link]'.green + ' process body\'s link'.blue)
-    console.log(' insane-cli -j [file-path]'.green + ' print results in JSON format'.blue)
-    console.log(' insane-cli [file-path] -i/--ignore [ignore.txt]'.green + ' ignore URLs in ignore.txt while testing a file'.blue)
 }

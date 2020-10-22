@@ -27,7 +27,18 @@ function readFiles(filename) {
     })
 }
 
-module.exports = {
-    readFiles
-  };
+function showHelp() {
+    console.log('HOW TO USE'.bgGreen)
+    console.log('------------------------------------------------'.blue)
+    console.log(' insane-cli'.green + ' for instructions'.blue)
+    console.log(' insane-cli [--version][/v]'.green + ' to check current version'.blue)
+    console.log(' insane-cli [file-path]'.green + ' process a file'.blue)
+    console.log(' insane-cli -url [full-url-link]'.green + ' process body\'s link'.blue)
+    console.log(' insane-cli -j [file-path]'.green + ' print results in JSON format'.blue)
+    console.log(' insane-cli [file-path] -i/--ignore [ignore.txt]'.green + ' ignore URLs in ignore.txt while testing a file'.blue)
+}
 
+module.exports = {
+    readFiles,
+    showHelp
+  };
