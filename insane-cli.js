@@ -165,7 +165,7 @@ if (argv3 != null) {
         }
     } else {
         if (argv3 === '--version' || argv3 === '/v') {
-            console.log('INSANE-CLI VERSION 0.69'.green)
+            console.log('Insane-CLI Version 1.0'.green)
         } else { // for local file process
             let filename = argv3
 
