@@ -5,11 +5,15 @@ const readline = require('readline')
 const colors = require('colors')
 const request = require('request')
 const { url } = require('inspector')
+const { Data } = require('./data');
+const { Util } = require('./util');
+const { readFiles } = require('./util')
+const util = require('./util')
 
 
 // patterns & splitter
-const PT1 = /\bhttps?::\/\/\S+/gi
-const PT2 = /\bhttps?:\/\/\S+/gi
+const pattern1 = /\bhttps?::\/\/\S+/gi
+const pattern2 = /\bhttps?:\/\/\S+/gi
 // wayback api
 const waybackApi = "http://archive.org/wayback/available?"
 
@@ -169,26 +173,34 @@ if (argv3 != null) {
         } else { // for local file process
             let filename = argv3
 
-            try {
-                if (fs.existsSync(filename)) { // check if file exist
-                    (async () => {
-                        await fs.promises.readFile(filename)
-                            .then(function (data) {
+            util.readFiles(filename).then( urls => {
+                new Data(urls).getURLandPrint()
+            })
 
-                                let finalURLs = getURLs(data)
-                                printURLStatus(finalURLs)
 
-                            })
-                            .catch(function (error) {
-                                console.log(error)
-                            })
-                    })()
-                } else {
-                    console.log('File not found!')
-                }
-            } catch (err) {
-                console.error(err)
-            }
+            
+
+
+            // try {
+            //     if (fs.existsSync(filename)) { // check if file exist
+            //         (async () => {
+            //             await fs.promises.readFile(filename)
+            //                 .then(function (data) {
+
+            //                     let finalURLs = getURLs(data)
+            //                     printURLStatus(finalURLs)
+
+            //                 })
+            //                 .catch(function (error) {
+            //                     console.log(error)
+            //                 })
+            //         })()
+            //     } else {
+            //         console.log('File not found!')
+            //     }
+            // } catch (err) {
+            //     console.error(err)
+            // }
         }
     }
 
@@ -202,8 +214,8 @@ function getURLs(data) {
     let tempArr = data.toString().split(/[({\\<"^`|>})]/)
 
     for (let i = tempArr.length; i--;) {
-        let tmp = (tempArr[i].match(PT1) || tempArr[i].match(PT2)) != null ?
-            tempArr[i].match(PT1) || tempArr[i].match(PT2) : ""
+        let tmp = (tempArr[i].match(pattern1) || tempArr[i].match(pattern2)) != null ?
+            tempArr[i].match(pattern1) || tempArr[i].match(pattern2) : ""
 
         if (tmp.length === 1) {
             if (tmp !== "") finalURLs.push(tmp[0])
