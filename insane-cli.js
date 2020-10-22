@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// new branch sample
+
 const fs = require('fs')
 const readline = require('readline')
 const colors = require('colors')
@@ -10,10 +10,6 @@ const { Util } = require('./util');
 const { readFiles } = require('./util')
 const util = require('./util')
 
-
-// patterns & splitter
-const pattern1 = /\bhttps?::\/\/\S+/gi
-const pattern2 = /\bhttps?:\/\/\S+/gi
 // wayback api
 const waybackApi = "http://archive.org/wayback/available?"
 
