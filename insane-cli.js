@@ -43,7 +43,7 @@ if (argv3 != null) {
         if (argv3 === '-url' || argv3 === '/url') {
             request(argv4, function (error, response, body) {
                 if (response.statusCode === 200) { // only process url with statusCode 200
-                    let tempURL = getURLs(body)
+                    let tempURL = new Data().getURLs(body)
                     printURLStatus(tempURL)
                 } else {
                     console.log('Bad link'.red)
@@ -87,7 +87,8 @@ if (argv3 != null) {
                         await fs.promises.readFile(filename)
                             .then(function (data) {
 
-                                let finalURLs = getURLs(data)
+                                // let finalURLs = getURLs(data)
+                                let finalURLs = new Data().getURLs(data)
                                 printURLStatusInJSON(finalURLs)
 
                             })
@@ -113,7 +114,8 @@ if (argv3 != null) {
                         await fs.promises.readFile(filename)
                             .then(function (data) {
 
-                                let finalURLs = getURLs(data)
+                                // let finalURLs = getURLs(data)
+                                let finalURLs = new Data().getURLs(data)
                                 printURLStatusByFlag(finalURLs, argv3)
 
                             })
@@ -140,7 +142,7 @@ if (argv3 != null) {
                         (async () => {
                             await fs.promises.readFile(filename)
                                 .then(function (data) {
-                                    let finalURLs = getURLs(data)
+                                    let finalURLs = new Data().getURLs(data)
                                     finalURLs = finalURLs.filter(url => {
                                         let flag = true
                                         for (let i = 0; i < lists.length; i++) {
@@ -170,37 +172,13 @@ if (argv3 != null) {
     } else {
         if (argv3 === '--version' || argv3 === '/v') {
             console.log('Insane-CLI Version 1.0'.green)
-        } else { // for local file process
+        } else { // for local file process, read and process
             let filename = argv3
 
             util.readFiles(filename).then( urls => {
                 new Data(urls).getURLandPrint()
             })
 
-
-            
-
-
-            // try {
-            //     if (fs.existsSync(filename)) { // check if file exist
-            //         (async () => {
-            //             await fs.promises.readFile(filename)
-            //                 .then(function (data) {
-
-            //                     let finalURLs = getURLs(data)
-            //                     printURLStatus(finalURLs)
-
-            //                 })
-            //                 .catch(function (error) {
-            //                     console.log(error)
-            //                 })
-            //         })()
-            //     } else {
-            //         console.log('File not found!')
-            //     }
-            // } catch (err) {
-            //     console.error(err)
-            // }
         }
     }
 
@@ -208,26 +186,6 @@ if (argv3 != null) {
     showHelp()
 }
 
-// extract some special urls that regex can't do alone
-function getURLs(data) {
-    let finalURLs = []
-    let tempArr = data.toString().split(/[({\\<"^`|>})]/)
-
-    for (let i = tempArr.length; i--;) {
-        let tmp = (tempArr[i].match(pattern1) || tempArr[i].match(pattern2)) != null ?
-            tempArr[i].match(pattern1) || tempArr[i].match(pattern2) : ""
-
-        if (tmp.length === 1) {
-            if (tmp !== "") finalURLs.push(tmp[0])
-        } else {
-            for (let i = tmp.length; i--;) {
-                finalURLs.push(tmp[i])
-            }
-        }
-    }
-    finalURLs = [...new Set(finalURLs)]
-    return finalURLs
-}
 
 function printURLStatus(urls) {
 
