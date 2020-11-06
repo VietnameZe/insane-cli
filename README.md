@@ -36,6 +36,9 @@ insane-cli -url https://www.google.com
 // Search in wayback machine
 insane-cli -w https://finance.yahoo.com 2016
 
+// Check links from Telescope 10 latest posts
+insane-cli -telescope http://localhost:3000/posts
+
 ```
 
 
