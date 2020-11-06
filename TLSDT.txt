@@ -1,0 +1,1003 @@
+<h3>Lab 6 — DPS909</h3><p>Interacting with Telescope</p><p>This week I had the chance to interact with the <a href="https://github.com/Seneca-CDOT/telescope">Telescope</a> project. The installation process and setting up the environment went pretty well. This is due to the experience I had in the previous month installing the Mattermost server.</p><p>The task for this week was to pull the posts from Telescope API and check the links inside of these posts by using our <a href="https://github.com/egrinberg/Utest/">URL link checker</a>. I decided to create a function that sends a request to the local server which returns a JSON object with posts’ ids and URLs. Then I extracted all the posts ids and store them in the array. Then I iterate through the array of ids and called another function called writePostToFile with the id parameter.</p><pre>const writePostToFile = async (post,id) =&gt; {</pre><pre>fetch(post)</pre><pre>.then(</pre><pre>res =&gt;</pre><pre>new Promise((resolve, reject) =&gt; {</pre><pre>const path = `./telescope/posts/${id}`;</pre><pre>const dest = fs.createWriteStream(path);</pre><pre>res.body.pipe(dest);</pre><pre>res.body.on("end", () =&gt; resolve(path));</pre><pre>dest.on("error", reject);</pre><pre>})</pre><pre>)</pre><pre>.then(path =&gt; {</pre><pre>console.log(path);</pre><pre>let p = `${path}`;</pre><pre>fileHandler.processFile(p);</pre><pre>});</pre><p>This function sends a request to the local server with the specified post id, retrieves the text of the post and creates a new file with the post’s content. When the file is created it passes the file to the processFile function.</p><pre>const processFile =  (filename,json) =&gt; {</pre><pre>// Create stream with the file</pre><pre>let s = fs.createReadStream(filename);</pre><pre>return new Promise((resolve, reject) =&gt; {</pre><pre>s.on("data", (buf) =&gt; {</pre><pre>// Get all the URL links from the file</pre><pre>urlList = buf</pre><pre>.toString()</pre><pre>.match(/(http|https)(:\/\/)([\w+\-&amp;@`~#$%^*.=/?:]+)/gi);</pre><pre>// console.log(`${filename} ${urlList}`)</pre><pre>});<br></pre><pre>s.on("end", async () =&gt; {</pre><pre>var responseStatusByUrl = [];</pre><pre>var statusResponseForUrl;</pre><pre>//Iterate through the links and check their status</pre><pre>await Promise.all(</pre><pre>urlList.map(async (url) =&gt; {</pre><pre>try {</pre><pre>const urlTest = await fetch(url, { method: "head", timeout: 1500 });</pre><pre>statusResponseForUrl = { url: `${url}`, status: `${urlTest.status}` };</pre><pre>responseStatusByUrl.push(statusResponseForUrl);</pre><pre>} catch (error) {</pre><pre>statusResponseForUrl = { url: `${url}`, status: "UNKNOWN" };</pre><pre>responseStatusByUrl.push(statusResponseForUrl);</pre><pre>}</pre><pre>})</pre><pre>);</pre><pre>if (json) {</pre><pre>console.log(JSON.stringify(responseStatusByUrl));</pre><pre>} else {</pre><pre>printResponse(responseStatusByUrl);</pre><pre>}</pre><pre>process.exit(checkStatus(responseStatusByUrl));</pre><pre>});</pre><pre>s.on("error",error =&gt; reject(error));</pre><pre>});<br>}</pre><p>This function receives a file, extracts all the URLs, and checks all the URLs statuses.</p><p>The only issue I had while writing the code is the use of Promises which I am sure can be improved in my code. Hope to fix it in the&nbsp;future.</p><p>Commit of this work — -&gt; <a href="https://github.com/egrinberg/Utest/commit/5b3e1090c1dd85debcc35b400ecc33321536c6b7">Lab&nbsp;6</a>.</p><img src="https://medium.com/_/stat?event=post.clientViewed&amp;referrerSource=full_rss&amp;postId=11767c605e33" loading="lazy">Lab 6 is about adding an argument to check links in Telescope's recent 10 posts to the link checker command-line tool named url-fi which I created. The instruction of lab 6 is the following:&nbsp;&nbsp;<a href="https://github.com/Seneca-CDOT/topics-in-open-source-2020/wiki/lab-6">https://github.com/Seneca-CDOT/topics-in-open-source-2020/wiki/lab-6</a><div><div><br></div><div>The website named Telescope is an open-source web server and client application for aggregating and presenting a timeline of Seneca's open-source blogs. The way of setting up the Telescope and the GitHub repository links are the following:<br><div>Telescope GitHub repository:&nbsp;<a href="https://github.com/Seneca-CDOT/telescope">https://github.com/Seneca-CDOT/telescope</a></div><div>CONTRIBUTING guide:&nbsp;<a href="https://github.com/Seneca-CDOT/telescope/blob/master/docs/CONTRIBUTING.md">https://github.com/Seneca-CDOT/telescope/blob/master/docs/CONTRIBUTING.md</a></div><div>Environment Setup guide:&nbsp;<a href="https://github.com/Seneca-CDOT/telescope/blob/master/docs/environment-setup.md">https://github.com/Seneca-CDOT/telescope/blob/master/docs/environment-setup.md</a></div><div><br></div><div>After I set up the Telescope and can run it locally, I started improving my command-line tool by putting additional argument options. As way I can get the recent I used the way to get the recent Telescope 10 blogs is using the link "localhost:3000/posts" which gives the JSON format information about the link, I write some code to interact with the local Telescope server and get post links. There are representatively three parts I add my code to implement the feature.</div></div></div><div><br></div><div>First, I added const variable named telescopeUrl which is the link I can get the recent 10 Telecope blogs.</div><div><div><div>//telescope&nbsp;url</div><div>const&nbsp;telescopeUrl&nbsp;=&nbsp;"http://localhost:3000/posts";</div></div></div><div><br></div><div><div>Second, I created the function named checkTelescopePosts. It uses the variable named telescopeUrl to get the JSON file from the link. It checks all the links in the JSON file and displays the results of the URLs checking.</div><div><div><div>//&nbsp;Check&nbsp;telescope's&nbsp;recent&nbsp;10&nbsp;posts&nbsp;link</div><div>function&nbsp;checkTelescopePosts()&nbsp;{</div><div>&nbsp;&nbsp;&nbsp;&nbsp;request(</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;telescopeUrl</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;,&nbsp;function&nbsp;(err,&nbsp;res,&nbsp;body)&nbsp;{</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;let&nbsp;postIds&nbsp;=&nbsp;JSON.parse(body);</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;(let&nbsp;i&nbsp;=&nbsp;0;&nbsp;i&nbsp;&lt;&nbsp;postIds.length;&nbsp;i++)&nbsp;{</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;let&nbsp;postUrl&nbsp;=&nbsp;`${telescopeUrl}/${postIds[i].id}`;</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;checkUrl(postUrl);</div><br><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(sFlag)&nbsp;{</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;checkUrl(postUrl.replace(/^http/,&nbsp;"https"));</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;})</div><div>}</div></div></div><div><br></div></div><div>Third, in the for loop I created to check the arguments, I added checking 't' argument part. When the user runs the tool with the argument t, it goes to the function named checkTelescopPosts.</div><div><div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;(arg.includes("t"))&nbsp;{</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tFlag&nbsp;=&nbsp;true;</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;checkTelescopePosts();</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</div></div></div><div><br></div><div>This is the output of my link checker when I run 'url-fi -t'.</div><div><div><a href="https://1.bp.blogspot.com/-fcX5uRrrhhI/X6TeDL1NC0I/AAAAAAAAA0c/QP9GW7jr2E8bTj5A2RPXvIZr_PaJitAXQCNcBGAsYHQ/s491/lab6%2B-%2Boutput.JPG"><img src="https://1.bp.blogspot.com/-fcX5uRrrhhI/X6TeDL1NC0I/AAAAAAAAA0c/QP9GW7jr2E8bTj5A2RPXvIZr_PaJitAXQCNcBGAsYHQ/w400-h186/lab6%2B-%2Boutput.JPG" loading="lazy"></a></div><br></div><div>There are additional coding parts I wrote to implement the feature such as creating t flag. You can check the detailed code changes looking at the gist I created for the lab6:&nbsp;&nbsp;<a href="https://gist.github.com/hyunjiLeeTech/89f4f8b97bdd66c1e814b0fb7dc3d9c0">https://gist.github.com/hyunjiLeeTech/89f4f8b97bdd66c1e814b0fb7dc3d9c0</a></div><div><br></div><div>While I am working on the lab6, I realized it would be better to move my functions to the bottom and move the main functions to the top. So I created commits to improve the maintenance. Also, I added more comments about my code:&nbsp;</div><div><ul><li><a href="https://github.com/hyunjiLeeTech/URL-FI/commit/af0cfe543c49ce05e3d6143c2188cbf387930baf">https://github.com/hyunjiLeeTech/URL-FI/commit/af0cfe543c49ce05e3d6143c2188cbf387930baf</a></li><li><a href="https://github.com/hyunjiLeeTech/URL-FI/commit/d85de2f0bc37350c8f5a7d8f27350d83daaa0392">https://github.com/hyunjiLeeTech/URL-FI/commit/d85de2f0bc37350c8f5a7d8f27350d83daaa0392</a></li></ul></div><div><br></div><div>The most difficult part of this lab was set up the Telescope. As the Telescope has some prerequisites such as Redis and Elasticsearch which I had not used before, I needed to install them and learn how to use docker, how to install Ubuntu. It was an interesting challenge but it takes the most time for my lab6. After I finish preparing the prerequisites, I ran the Telescope. Working with Telescope REST API itself was okay and modifying my link checker with the data from Telescope does not need lots of change. I just need to apply the way I've already written. I think my code is in good shape to accomplish and I feel I am ready to challenge a more complicated one.</div><p>Because your web code is as clean as 8 year olds at day care. That's why. I really should have invested in a hand sanitizer company back in April. I wonder how well they're doing.</p>
+
+<p>Anyway, as part of my continual blogging as part of my Open Source Development course, this week I'm going to discuss a PR constructed for our class project <a href="https://telescope.cdot.systems/">Telescope</a>. As part of our third assignment, we're required to contribute to a repo of our choosing, and some sort of contribution to Telescope. </p>
+
+<blockquote>
+<p><em>Telescope is an open source web server and client application for aggregating and presenting a timeline of Seneca's open source blogs. Telescope makes it easy to see what's happening with open source at Seneca right now.</em></p>
+</blockquote>
+
+<p>My JavaScript is near nonexistent but I really enjoy working with web technologies. Because of this week was hectic, confusing, yet also very exciting.</p>
+
+<p>I'd really like to contribute towards the back end but my front end skills work really needs work. It was either this or contribute towards writing front end testing- which is on hold right now since we're <a href="https://dev.to/chrispinkney/release-0-2-3-or-pivoting-by-a-beautiful-little-fool-378g">pivoting to next.js</a>. <strong>Nonetheless, I decided to jump right into <a href="https://github.com/Seneca-CDOT/telescope/issues/1266">an issue that affected the User eXperience</a>, and as a bonus, an issue partially based on something that really excites me- <em>security</em>!</strong> This issue revolves around how an image (specifically, <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs">a particular type of image</a>) wasn't being loaded, and it was because of this that I found this issue so interesting:</p>
+
+<p><a href="https://res.cloudinary.com/practicaldev/image/fetch/s---BlA8IL1--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://user-images.githubusercontent.com/427398/97818088-52703e00-1c6e-11eb-88e1-5c4666e583c8.png"><img src="https://res.cloudinary.com/practicaldev/image/fetch/s---BlA8IL1--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://user-images.githubusercontent.com/427398/97818088-52703e00-1c6e-11eb-88e1-5c4666e583c8.png" loading="lazy"></a><br>
+Telescope had scraped the original post, but not the <code><img></code> tag. What gives? Time to get my magnifying glass and top hat... like a nerdier Sherlock Holmes.</p>
+
+<p><a href="https://res.cloudinary.com/practicaldev/image/fetch/s--4OKDm11S--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/i/uds58rhcq4zmy4gxjuwj.png"><img src="https://res.cloudinary.com/practicaldev/image/fetch/s--4OKDm11S--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/i/uds58rhcq4zmy4gxjuwj.png" loading="lazy"></a></p>
+
+<p>My first step was to explore Telescope and find out how it works, what makes it tick, maybe it enjoys long walks on the beach, or maybe a big it spends its free time dreaming of electric sheep 'neath the clouds. I got a hint from the issue post on GitHub that the <a href="https://github.com/apostrophecms/sanitize-html">Sanitizer</a> used with the project's parser likely the culprit. I dug around until I found the sanitizer module, then spent some time reading about how it works. I also spent an embarrassingly long amount of time reading about html tags and attributes... it's been a while. Finally I spent some time reading about how <code>data:</code> URIs work.</p>
+
+<p>Once I oriented myself I spun up my local copy of the project, and got to work. My second step was to hunt down exactly what is and is not being accepted to the database when parsing a blog post. <strong>I decided that I should first determine if changing this file actually does anything, i.e. if I was even on the right track.</strong> I decided to (<em>hilariously</em>) tell the sanitizer to restrict <strong>all</strong> html tags.</p>
+
+<p><em>Injecting a hilarious side note here, this is when I discovered that <code>dev.to</code> will block assets if hit enough times. You see, right when I decided to restrict all tags, the entire time I was making hits to a specific blog post that I wrote that had an image on it. I made my change and refreshed. And look! My image is gone! Great! Wait... wtf? Why are other people's images appearing still then? Furthermore, why does my post still have tags? Turns out <code>dev.to</code> uh... blocked my image from loading (it wasn't loading the actual Telescope site too.) Haha very funny guys. Just another thing I learned I guess. Anyway.</em></p>
+
+<p>Each post should just be plaintext at this point right? Right! Well, no. I made a bunch of changes and turns out once a post is indexed to the database, it is how it is and forever shall be, sanitized tags et al. I noticed this behaviour when a conveniently timed post was indexed for the first time, and was just in plaintext. Perfect, I'm on the right track. Now I just have to reverse my changes and figure out how to unblock these types of images.</p>
+
+<p>I went back to the sanitizers documentation and found what I needed:<br>
+</p>
+
+<div>
+<pre class="hljs css"><code><span class="hljs-selector-tag">allowedSchemesByTag</span>: { <span class="hljs-attribute">img</span>: [<span class="hljs-string">'data'</span>] },
+</code></pre>
+<div>
+<div>
+    Enter fullscreen mode
+    
+
+
+    Exit fullscreen mode
+    
+
+
+</div>
+</div>
+</div>
+
+
+
+<p>This simple one-line change enabled <code>img</code> tags that have a <code>data</code> scheme to be allowed. So... how do I test that this works? I asked around and my wonderful professor suggested, in much nicer words, that I stop wasting my time and instead write a unit test for this fix to see if an image with a <code>data</code> scheme was being received as expected. Good idea! And I also get to finally write a test! Something I've been tortured with for the last 2 years is now my own power. And here it is:</p>
+
+<p><a href="https://res.cloudinary.com/practicaldev/image/fetch/s--ekjw3_Un--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/i/luk752e3n5honr12dr4x.png"><img src="https://res.cloudinary.com/practicaldev/image/fetch/s--ekjw3_Un--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_auto%2Cw_880/https://dev-to-uploads.s3.amazonaws.com/i/luk752e3n5honr12dr4x.png" loading="lazy"></a><br>
+(Sorry for the image, dev.to isn't letting me post this code in a code block.)</p>
+
+<p>This is essentially just saying "I want this line of code to look the same when it comes out the other end of the sanitizer." And it did! I also made sure of this by modifying the test to see if it would break, and I made sure to reverse the changes made on the sanitizer to see if it would be blocked as expected, and it was! Success! Or... was it?</p>
+
+<p><a href="https://res.cloudinary.com/practicaldev/image/fetch/s--0K7eaRAY--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_66%2Cw_880/https://media1.tenor.com/images/0495476ec262254ab968676f05ce1b0a/tenor.gif%3Fitemid%3D9251847"><img src="https://res.cloudinary.com/practicaldev/image/fetch/s--0K7eaRAY--/c_limit%2Cf_auto%2Cfl_progressive%2Cq_66%2Cw_880/https://media1.tenor.com/images/0495476ec262254ab968676f05ce1b0a/tenor.gif%3Fitemid%3D9251847" loading="lazy"></a><br>
+It was then that I realized the hubris and greed of my ways. Why on Earth was my new addition causing other tests to fail?? I stumbled on this issue for an hour or so until I noticed the problem. Maybe you'll notice it faster than me:<br>
+</p>
+
+<div>
+<pre class="hljs css"><code><span class="hljs-selector-tag">allowedSchemesByTag</span>: { <span class="hljs-attribute">img</span>: [<span class="hljs-string">'data'</span>] },
+</code></pre>
+<div>
+<div>
+    Enter fullscreen mode
+    
+
+
+    Exit fullscreen mode
+    
+
+
+</div>
+</div>
+</div>
+
+
+
+<p>See that's the thing about programming. Computers do exactly as instructed. I just hadn't told it the right schemes to allow... <em>sigh</em>.<br>
+</p>
+
+<div>
+<pre class="hljs css"><code><span class="hljs-selector-tag">allowedSchemesByTag</span>: { <span class="hljs-attribute">img</span>: [<span class="hljs-string">'http'</span>, <span class="hljs-string">'https'</span>, <span class="hljs-string">'data'</span>] },
+</code></pre>
+<div>
+<div>
+    Enter fullscreen mode
+    
+
+
+    Exit fullscreen mode
+    
+
+
+</div>
+</div>
+</div>
+
+
+
+<p>Gee I wonder why all the images were being blocked. Hmm.</p>
+
+<p>With the fix in place, and my tests written, it was time to <code>git rebase</code>, <code>push</code>, and comment.</p>
+
+<p><a href="https://github.com/Seneca-CDOT/telescope/pull/1282">Here is the final PR</a> for the Telescope portion of this assignment.</p>
+
+
+
+
+<p>Overall I'm feeling really... well, okayish about this PR (and everything, really). I look around and see some <a href="https://github.com/Seneca-CDOT/telescope/pull/1274">really great</a> <a href="https://github.com/Seneca-CDOT/telescope/pull/1281">PRs by other students</a>. Why can't I be that good? Why can't I code this well? Well, in time maybe. Sucking at something is the first step towards not sucking at something. At least I always tell myself that. What a sucker I am.</p><p>&nbsp;<b>The Lab</b></p><p>This weeks lab was all about starting to learn how to work with Telescope and to setup its development environment. I also learned how to make a gist and use the diff command.</p><p>Setting up Telescopes environment was a real struggle. There is just so many moving parts going into the project that it was quite a task to get it running, though I'm still not quite sure if I got it running correctly. I ended setting up Redis Server and Elastic Search locally on my machine. Elastic Search seems to be working correctly since I was able to access the blog feeds, but I'm still not too sure about Redis.</p><p><b>Changing my LinkStatus program</b></p><p>I actually needed to put in a lot of changes to get the program to work with telescope. I added a new command that would start the whole telescope process called "-t". Using ./LinkStatus http://localhost:3000/posts -t would access the 10 most recent blog URLs and convert them into a JSON file. I then setup a struct to hold this data so I could then parse and format it into a proper URL into a another new file. With this I could use my program normally without many changes besides a new regex pattern to look for localhost URLs.</p><p>Here's the new Telescope output:</p><div><a href="https://1.bp.blogspot.com/-lsGlT6xJDsw/X6RkuEwEXiI/AAAAAAAAFjM/wI4eG3Ez9AAKdjfZxMNZdTfxqcvKqgYIACLcBGAsYHQ/s586/tele.PNG"><img src="https://1.bp.blogspot.com/-lsGlT6xJDsw/X6RkuEwEXiI/AAAAAAAAFjM/wI4eG3Ez9AAKdjfZxMNZdTfxqcvKqgYIACLcBGAsYHQ/w462-h251/tele.PNG" loading="lazy"></a></div><br><p>Since I had access to the JSON format for the blog data (id, URL) I choose to construct the URLs since each of them followed a similar pattern. I simply just appended "/posts/url" onto a premade string and appending that data to a file. The function completed a few important tasks:</p><p></p><ul><li>Create a JSON file</li><li>Perform a Get request on localhost:3000</li><li>Read and pull all the JSON data into the file</li><li>Create an object of type Telescope to hold the id and URL values</li><li>Populate that object with the data using Unmarshal</li><li>Create a new text file</li><li>Write to the new text file a constructed URL using the URL value</li></ul><p></p><p>Here's the new Struct and the new function to make this all work:</p><div><div>//Telescope&nbsp;struct&nbsp;which&nbsp;lays&nbsp;out&nbsp;the&nbsp;json&nbsp;data&nbsp;for&nbsp;easy&nbsp;storage</div><div>type&nbsp;Telescope&nbsp;struct&nbsp;{</div><div>&nbsp;&nbsp;&nbsp;&nbsp;ID&nbsp;&nbsp;string&nbsp;`json:"id"`</div><div>&nbsp;&nbsp;&nbsp;&nbsp;URL&nbsp;string&nbsp;`json:"url"`</div><div>}</div><div>func&nbsp;telescopeParse(file&nbsp;string)&nbsp;{</div><div>&nbsp;&nbsp;&nbsp;&nbsp;fmt.Println("Telescope&nbsp;Parsing")</div><div>&nbsp;&nbsp;&nbsp;&nbsp;fmt.Println(file)</div><div>&nbsp;&nbsp;&nbsp;&nbsp;fmt.Println("----------------------------------------------------------------------------------")</div><div>&nbsp;&nbsp;&nbsp;&nbsp;//Get&nbsp;the&nbsp;json&nbsp;data&nbsp;in&nbsp;a&nbsp;file</div><div>&nbsp;&nbsp;&nbsp;&nbsp;out,&nbsp;_&nbsp;:=&nbsp;os.OpenFile("telescopeData.json",&nbsp;os.O_APPEND|os.O_CREATE|os.O_WRONLY,&nbsp;0644)</div><div>&nbsp;&nbsp;&nbsp;&nbsp;defer&nbsp;out.Close()</div><div>&nbsp;&nbsp;&nbsp;&nbsp;resp,&nbsp;err&nbsp;:=&nbsp;http.Get(file)</div><div>&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;err&nbsp;!=&nbsp;nil&nbsp;{</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log.Println(err)</div><div>&nbsp;&nbsp;&nbsp;&nbsp;}</div><div>&nbsp;&nbsp;&nbsp;&nbsp;defer&nbsp;resp.Body.Close()</div><div>&nbsp;&nbsp;&nbsp;&nbsp;_,&nbsp;err&nbsp;=&nbsp;io.Copy(out,&nbsp;resp.Body)</div><div>&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;err&nbsp;!=&nbsp;nil&nbsp;{</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log.Println(err)</div><div>&nbsp;&nbsp;&nbsp;&nbsp;}</div><div>&nbsp;&nbsp;&nbsp;&nbsp;jsonFile,&nbsp;err&nbsp;:=&nbsp;os.Open("telescopeData.json")</div><div>&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;err&nbsp;!=&nbsp;nil&nbsp;{</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fmt.Println(err)</div><div>&nbsp;&nbsp;&nbsp;&nbsp;}</div><div>&nbsp;&nbsp;&nbsp;&nbsp;byteValue,&nbsp;err&nbsp;:=&nbsp;ioutil.ReadAll(jsonFile)</div><div>&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;err&nbsp;!=&nbsp;nil&nbsp;{</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fmt.Println(err)</div><div>&nbsp;&nbsp;&nbsp;&nbsp;}</div><div>&nbsp;&nbsp;&nbsp;&nbsp;var&nbsp;teleData&nbsp;[]Telescope</div><div>&nbsp;&nbsp;&nbsp;&nbsp;err&nbsp;=&nbsp;json.Unmarshal(byteValue,&nbsp;&amp;teleData)</div><div>&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;err&nbsp;!=&nbsp;nil&nbsp;{</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fmt.Println(err)</div><div>&nbsp;&nbsp;&nbsp;&nbsp;}</div><div>&nbsp;&nbsp;&nbsp;&nbsp;telescopeFile,&nbsp;err&nbsp;:=&nbsp;os.OpenFile("tData.txt",&nbsp;os.O_APPEND|os.O_CREATE|os.O_WRONLY,&nbsp;0644)</div><div>&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;err&nbsp;!=&nbsp;nil&nbsp;{</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log.Fatal(err)</div><div>&nbsp;&nbsp;&nbsp;&nbsp;}</div><div>&nbsp;&nbsp;&nbsp;&nbsp;for&nbsp;i&nbsp;:=&nbsp;0;&nbsp;i&nbsp;&lt;&nbsp;len(teleData);&nbsp;i++&nbsp;{</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;telescopeFile.Write([]byte("http://localhost:3000"&nbsp;+&nbsp;teleData[i].URL&nbsp;+&nbsp;"&nbsp;"))</div><div>&nbsp;&nbsp;&nbsp;&nbsp;}</div><div>&nbsp;&nbsp;&nbsp;&nbsp;telescopeFile.Close()</div><div>&nbsp;&nbsp;&nbsp;&nbsp;jsonFile.Close()</div><div>}</div></div><p>Since I'm new to working with GO, I had to research quite a bit on how to work with JSON data for this lab. I ended up using the encoding/json package to work with the data and it went pretty well.</p><p>With a newly created file in hand the program works as normal, but a some additional of a new regex pattern in file.go was introduced to handle localhost URLs.</p><div><div>if&nbsp;telescope&nbsp;==&nbsp;true&nbsp;{</div><div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;re&nbsp;=&nbsp;regexp.MustCompile(`https?:\/\/localhost:[0-9]{1,5}\/([-a-zA-Z0-9()@:%_\+.~#?&amp;\/=]*)`)</div><div>&nbsp;&nbsp;&nbsp;&nbsp;}</div></div><p><b>Using Gist and Diff</b></p><p>Once my work was finishing I had to create a gist to easily share my work. I added my two files I worked on then started to think how to use the diff command. At first I thought maybe download for gist with old and new files to then run the command, but after searching up the diff command docs I found out how to specify branches. From here I used&nbsp;git diff telescope master -- main.go.</p><p>I ran this command on both my files and added it to my gist.</p><p><b>What's</b><b>&nbsp;Next?</b></p><p>Over the course of this weekend and the next week Im going to be working with Telescope to finish my release 0.3 assignment. I already went out and got assigned for an issue to solve, so now I can focus on learning how to work with and solve this issue.</p><p>The issue I decided to work on was to add an additional feature to the search bar. I would need to make the program support autocomplete on the authors name as you would be typing and have them come up underneath the search bar.&nbsp;<a href="https://github.com/Seneca-CDOT/telescope/issues/1260">Add autocomplete to search for Authors #1260</a></p><p><br></p><p>It is no exaggeration to say that this assignment is one of the most challenging. In setting up the Telescope, I started really carefully because it looked difficult and challenge. I installed docker and docker-compose to work with Redis and Elasticsearch. But I had an issue that could not work in my laptop. I fixed this issue by searching in google but I had another issue “I can’t use ‘npm start'”.</p>
+
+
+
+<figure><img src="https://mintaedotblog.files.wordpress.com/2020/11/e18489e185b3e1848fe185b3e18485e185b5e186abe18489e185a3e186ba-2020-11-04-e1848be185a9e18492e185ae-2.38.56.png?w=1024" loading="lazy"></figure>
+
+
+
+<p><strong>How to fix this issue?</strong></p>
+
+
+
+<p>To fix my issue, I searched Slack because I think someone had the same issue before. And Also I sent a message to another student who already finished this lab. She read my error message and give me an answer that I need to install npm. I felt really shy and I thought I already installed it before. After fixing my issues, perfectly it was working</p>
+
+
+
+<figure><img src="https://mintaedotblog.files.wordpress.com/2020/11/e18489e185b3e1848fe185b3e18485e185b5e186abe18489e185a3e186ba-2020-11-04-e1848be185a9e18492e185ae-3.13.45.png?w=1024" loading="lazy"></figure>
+
+
+
+<p><strong>Add new feature in my tool “Check Links in Telescope Posts”</strong></p>
+
+
+
+<p>I created branch for adding new feature. I modify my code to check the links in telescope posts. but I had issue to check URLs. The first issue is my tools can’t check the urls in telescope posts. it sent me some error messages</p>
+
+
+
+<figure><img src="https://mintaedotblog.files.wordpress.com/2020/11/e18489e185b3e1848fe185b3e18485e185b5e186abe18489e185a3e186ba-2020-11-05-e1848be185a9e18492e185ae-2.52.40.png?w=1024" loading="lazy"></figure>
+
+
+
+<p>I searched on google but I couldn’t find an answer to fix this error. so I change my plan to check URLs. To fix this error, I decided to put the URL I had to check into the existing file and check it because I wanted to check if there was a problem with these URLs. URLs have no problems and it will work at the file. So I couldn’t check URLs directly but I could check URLs with creating file.</p>
+
+
+
+<p><strong>To fix the issue</strong></p>
+
+
+
+<p>I planed that I brought URLs and put URLs in the new file I will create when I run the tool. And then I will check that file which had URLs from telescope posts. It was perfectly working and all of URLs is good status code.</p>
+
+
+
+<figure><img src="https://mintaedotblog.files.wordpress.com/2020/11/e18489e185b3e1848fe185b3e18485e185b5e186abe18489e185a3e186ba-2020-11-05-e1848be185a9e18492e185ae-3.02.27.png?w=1024" loading="lazy"></figure>
+
+
+
+<p></p><h5>Fork, Clone, Set Up Telescope</h5>
+
+
+
+<ol><li>Fork? did this a multiple times</li><li>Clone? did this a millions of times</li><li>Set up the Telescope? failure. </li></ol>
+
+
+
+<h5>Setting the the Telescope for Windows users:</h5>
+
+
+
+<p>I had a hard time in setting up Telescope, the instruction was so much to read. I am not really a good “instruction follower” (as you can see from my older posts) so I messed up many times. I downloaded a bunch of stuffs that wasn’t really needed or for me. So for my future self, here’s how you set  up the Telescope:</p>
+
+
+
+<ol><li>Download and install <a href="https://hub.docker.com/editions/community/docker-ce-desktop-windows">Docker</a></li><li>Make sure you’re using WSL2 from the Docker’s settings</li><li>Open VS Code, and type in the following commands:</li></ol>
+
+
+<pre>$ copy env.example .env
+//Open .env and make sure you have assigned 1 to: MOCK_ELASTIC=1
+
+$ start docker
+
+$ docker-compose up --build redis elasticsearch
+//ctrl+c to get out 
+
+$ npm start
+//open up http://localhost:3000/posts or http://localhost:3000/feeds to see the data
+</pre>
+
+
+<p>I then added the “localhost” feature in my Bapples, this feature takes in any URL, then put all the contents into a string. I then parsed in JSON file to take the URL post, each URL post will then be checked if the link is good, bad, or unknown:</p>
+
+
+
+<figure><div>
+<a href="https://cdn.discordapp.com/attachments/766377851510980628/773759424766279710/unknown.png"><img src="https://cdn.discordapp.com/attachments/766377851510980628/773759424766279710/unknown.png" loading="lazy"></a>
+</div></figure>
+
+
+
+<p>I learned about GitHub Gist, its pretty cool as we can see all the changes made from 2 different commits. Take a look at this wonderful Gist:</p>
+
+
+
+<figure><div>
+<div>
+    <div>
+      <div>
+        <div>
+  <div>
+    
+
+  <div>
+      
+<table>
+      <tbody><tr>
+        <td></td>
+        <td>diff –git a/assets/bapples.jar b/assets/bapples.jar</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>index c5231eb..a1f86c8 100644</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>Binary files a/assets/bapples.jar and b/assets/bapples.jar differ</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>diff –git a/src/nesabyte_bapples/Cleaner.java b/src/nesabyte_bapples/Cleaner.java</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>index 58fb6ba..d925b05 100644</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>— a/src/nesabyte_bapples/Cleaner.java</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+++ b/src/nesabyte_bapples/Cleaner.java</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>@@ -37,7 +37,7 @@ public class Cleaner{// extends UrlCleaner{</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>      */</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>     public static void main(String[] args) throws Exception {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td> </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        String mUrl, html, txt = "";</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        String mUrl, html, txt = "", lh;</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>         HashSet&lt;String&gt; m_url;</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>         HashSet&lt;String&gt; commands;</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td> </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>@@ -64,6 +64,9 @@ public class Cleaner{// extends UrlCleaner{</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>             //get the html from the command</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>             html = Handlers.pullHTML(str);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td> </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            //get single url localhost</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            lh = Handlers.pullLink(str);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>             try {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>                 //if user gave 1 or more commands</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>                 if (commands.size() &gt; 0) {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>@@ -73,7 +76,7 @@ public class Cleaner{// extends UrlCleaner{</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td> </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>                         //if user wants the check the version</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>                         if (cmds.matches("–v") || cmds.matches("–version")) {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–                            System.out.println("Bapples version: bap.v.03");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+                            System.out.println("Bapples version: bap.v.04");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td> </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>                             //if you wants to check the help</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>                         } else if (cmds.matches("–h") || cmds.matches("–help")) {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>@@ -132,11 +135,14 @@ public class Cleaner{// extends UrlCleaner{</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>                             JsonHandler.tobeJSON(html);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td> </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>                             //if user wants to ignore urls, read ignore-url from txt file</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–                        } else if((cmds.matches("–ignore") || cmds.matches("–i"))){</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+                        } else if((cmds.matches("–ignore") || cmds.matches("–i"))) {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>                             txt = HtmlHandler.pullTXT(str);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>                             File directory = new File(txt);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–                            HtmlHandler.classifyingTXT(directory.getAbsolutePath(),html, unknown);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+                            HtmlHandler.classifyingTXT(directory.getAbsolutePath(), html, unknown);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+                            //if user wants to check urls from localhost</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+                        } else if((cmds.matches("–localhost") || cmds.matches("–lh")) &amp;&amp; m_url.size() &gt; 0) {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+                            LocalHostHandler.classifyingLH(lh);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td> </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>                             //if nothing matches, command is not allowed</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>                         } else {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>diff –git a/src/nesabyte_bapples/Handlers.java b/src/nesabyte_bapples/Handlers.java</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>index 84325d7..192d210 100644</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>— a/src/nesabyte_bapples/Handlers.java</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+++ b/src/nesabyte_bapples/Handlers.java</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>@@ -158,6 +158,23 @@ public class Handlers {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>         return links;</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>     }</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td> </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+    public static String pullLink(String text) {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        //regex to find the link</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        String regex = "(?:(?:https?|ftp)://)[-A-Za-z0-9+&amp;@#/%?=~_()|!:,.;]*[-A-Za-z0-9+&amp;@#/%=~_()|]";</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        Pattern p = Pattern.compile(regex);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        Matcher m = p.matcher(text);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        while (m.find()) {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            String urlStr = m.group();</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            if (urlStr.startsWith("(") &amp;&amp; urlStr.endsWith(")")) {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+                urlStr = urlStr.substring(1, urlStr.length() – 1);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            }</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            return urlStr;</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        }</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        return "";</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+    }</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>     /***</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>      * this method accepts a string, it finds all the COMMANDS from the string.</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>      * It recognizes the link through the help of the regex.</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>@@ -191,21 +208,22 @@ public class Handlers {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>      * This method is called when the user wants help, all commands is listed in here</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>      */</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>     public static void bappleHelp() {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        System.out.println("———————————————————————————");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        System.out.println("- WELCOME TO BAPPLES! Finding bad apples from any LINKS or HTML files           -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        System.out.println("———————————————————————————");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        System.out.println("-      –v or –version | to check the Bapple version                           -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        System.out.println("-      –h or –help    | to check the Bapple help                              -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        System.out.println("-      &lt;filename&gt;       | to validate links within a file                       -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        System.out.println("-      –200            | to list urls with status code: SUCCESS                -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        System.out.println("-      –400 or –404   | to list urls with status code: CLIENT ERRORS          -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        System.out.println("-      –XXX            | to list urls with status code: UNKNOWNS               -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        System.out.println("-      –secure         | to check URLS with http:// if they work with https:// -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        System.out.println("-      –all            | to list urls with all status                          -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        System.out.println("-      –good           | to list urls with good status code: 200               -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        System.out.println("-      –bad            | to list urls with bad status code: 404 and 400        -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        System.out.println("-      –i or –ignore  | to list urls except ignore url list                   -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>–        System.out.println("———————————————————————————");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("————————————————————————————-");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("- WELCOME TO BAPPLES! Finding bad apples from any LINKS or HTML files               -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("————————————————————————————-");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("-      –v or –version     | to check the Bapple version                           -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("-      –h or –help        | to check the Bapple help                              -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("-      &lt;filename&gt;           | to validate links within a file                       -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("-      –200                | to list urls with status code: SUCCESS                -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("-      –400 or –404       | to list urls with status code: CLIENT ERRORS          -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("-      –XXX                | to list urls with status code: UNKNOWNS               -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("-      –secure             | to check URLS with http:// if they work with https:// -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("-      –all                | to list urls with all status                          -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("-      –good               | to list urls with good status code: 200               -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("-      –bad                | to list urls with bad status code: 404 and 400        -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("-      –i or –ignore      | to list urls except ignore url list                   -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("-      –lh or –localhost  | to check telescope links                              -");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        System.out.println("————————————————————————————-");</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>     }</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td> </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>     /***</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>diff –git a/src/nesabyte_bapples/LocalHostHandler.java b/src/nesabyte_bapples/LocalHostHandler.java</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>new file mode 100644</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>index 0000000..c4ef400</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>— /dev/null</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+++ b/src/nesabyte_bapples/LocalHostHandler.java</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>@@ -0,0 +1,59 @@</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+package nesabyte_bapples;</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+import java.util.HashSet;</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+import java.util.regex.Matcher;</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+import java.util.regex.Pattern;</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+public class LocalHostHandler {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+    /***</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+     * this method takes in the localhost link, then save all its contents into a string.</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+     * The string then is processed by the use of the pullLink() method to take all of the links and be placed inside a HashSet.</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+     * Then the Results(int, alink, gcounter, bcounter, ucounter) method is called to display the result of this method</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+     * @param m_url</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+     */</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+    public static void classifyingLH(String m_url){</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        try {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            String content =  UrlHandler.UrlReader(m_url);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            HashSet&lt;String&gt; aLink = pullPosts(content);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            System.out.println("\nTotal Apple count: " + aLink.size());</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            //counters for good, bad, unknown links</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            int Gcounter = 0, Bcounter = 0, Ucounter = 0;</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            Handlers.Results(999,aLink, Gcounter, Bcounter, Ucounter);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        } catch (Exception e) {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            System.out.println("\n\nYou gave me a Bad Apple Tree: " + e + "\n" + m_url);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        }</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+    }</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+    /***</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+     * this method accepts a string, it finds all the /posts/* from the string.</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+     * It recognizes the posts id and store it into the links</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+     * then returns the LINKS</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+     *      *</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+     * @param text</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+     * @return</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+     */</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+    public static HashSet&lt;String&gt; pullPosts(String text){</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        HashSet&lt;String&gt; links = new HashSet&lt;String&gt;();</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        String regex = "/posts/[-A-Za-z0-9]*[-A-Za-z0-9]";// "(?:(?:https?|ftp)://)[-A-Za-z0-9+&amp;@#/%?=~_()|!:,.;]*[-A-Za-z0-9+&amp;@#/%=~_()|]";</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        Pattern p = Pattern.compile(regex);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        Matcher m = p.matcher(text);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        while (m.find()) {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            String urlStr = m.group();</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            if (urlStr.startsWith("(") &amp;&amp; urlStr.endsWith(")")) {</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+                urlStr = urlStr.substring(1, urlStr.length() – 1);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            }</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            //if a link is found, save it in the hashset</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            urlStr = "<a href="http://localhost:3000&quot;+">http://localhost:3000"+</a> urlStr;</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+            links.add(urlStr);</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        }</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+        return links;</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+    }</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>+}</td>
+      </tr>
+</tbody></table>
+
+
+  </div>
+
+  </div>
+</div>
+
+      </div>
+      <div>
+        <a href="https://gist.github.com/NesaByte/2934437fe39ac65a8d25130679f2ec8c/raw/b5925e3cb50fb096d0446c1cbf6fab0623abc7c2/lab6.diff">view raw</a>
+        <a href="https://gist.github.com/NesaByte/2934437fe39ac65a8d25130679f2ec8c#file-lab6-diff">lab6.diff</a>
+        hosted with ❤ by <a href="https://github.com">GitHub</a>
+      </div>
+    </div>
+</div>
+
+</div></figure>
+
+
+
+<p></p><p>From this week to the end of this semester, we will focus on an open source project named <a href="https://github.com/Seneca-CDOT/telescope">Telescope</a>, which is built by Seneca students. I have introduced this project last month.</p>
+
+
+
+<p>The first task this week is setting up project environment. The project uses a variety of technologies, such as Redis, GatsbyJS, Docker, Elasticsearch, etc. therefore, it is not easy to get everything done. However, I worked on this project in Hacktoberfest,  I have already run the project on my machine. So, I skip this step.</p>
+
+
+
+<p>Next, I was required to modified my <a href="https://github.com/jossiey/LinkChecker-CmdLC">LinkChecker-CmdLC</a> to check links in Telescope Posts, <a href="http://localhost:3000/posts">http://localhost:3000/posts</a>.</p>
+
+
+
+<figure><img src="https://jyangblogs.files.wordpress.com/2020/11/localserver.jpg?w=676" loading="lazy"></figure>
+
+
+
+<p>This part was easy to implement. I modified the code and run it.</p>
+
+
+
+<figure><img src="https://jyangblogs.files.wordpress.com/2020/11/localserverresult.jpg?w=1024" loading="lazy"></figure>
+
+
+
+<p>Last, I needed to create a  <a href="https://gist.github.com/jossiey/a72111ede8abe3f1d3c7ba84ab1c4935">Gist</a> to record the modification and differences between my codes. </p>
+
+
+
+<figure><img src="https://jyangblogs.files.wordpress.com/2020/11/gitdiff.jpg?w=644" loading="lazy"></figure>
+
+
+
+<p>There are so many new technologies, I can hardly wait&nbsp;to learn and explore them.</p><p>&nbsp;This month we will start to work on Telescope project.&nbsp;Telescope is a somewhat complex system that uses many technologies.&nbsp;For the first week of this month, we need to prepare something for the project.</p><p>First of all, I try to set up the&nbsp;Telescope development environment on my local host.&nbsp;I have to say, it took me a lot of time to&nbsp;set up this environment. After searching for and installing&nbsp;relevant applications, I implement the Telescope project successfully.</p><p>http://localhost:3000/posts</p><p></p><div><a href="https://1.bp.blogspot.com/-woXwRPHi6vQ/X6MLAFjF2II/AAAAAAAAAEM/uXuZ45pIW2gDOwi-CmlepC986z3IFU-jQCLcBGAsYHQ/s1646/feeds.jpg"><img src="https://1.bp.blogspot.com/-woXwRPHi6vQ/X6MLAFjF2II/AAAAAAAAAEM/uXuZ45pIW2gDOwi-CmlepC986z3IFU-jQCLcBGAsYHQ/w353-h256/feeds.jpg" loading="lazy"></a></div><div><br></div><div>http://localhost:3000/feeds</div><div><a href="https://1.bp.blogspot.com/-5mXFq37Rwho/X6MLph1Eg1I/AAAAAAAAAEY/pbMFzNF9UkAcGIzqA1s5QHjWf1eDLv9yQCLcBGAsYHQ/s1634/posts.jpg"><img src="https://1.bp.blogspot.com/-5mXFq37Rwho/X6MLph1Eg1I/AAAAAAAAAEY/pbMFzNF9UkAcGIzqA1s5QHjWf1eDLv9yQCLcBGAsYHQ/s320/posts.jpg" loading="lazy"></a></div><br>Second, I add a new feature in my&nbsp;<a href="https://github.com/lixiaoqity/testLink">Link Checker</a> project&nbsp;to&nbsp;check the links in the last 10 posts indexed by my local Telescope. I create a new js file called readUrl to&nbsp;implement&nbsp;the function.<p></p><p></p><div><a href="https://1.bp.blogspot.com/-8gGjLfn55PU/X6MNvCRK0DI/AAAAAAAAAEk/Z7bfG1kxVz8Wzjf-VFB7z50VoSiiEbPigCLcBGAsYHQ/s1764/code.jpg"><img src="https://1.bp.blogspot.com/-8gGjLfn55PU/X6MNvCRK0DI/AAAAAAAAAEk/Z7bfG1kxVz8Wzjf-VFB7z50VoSiiEbPigCLcBGAsYHQ/s320/code.jpg" loading="lazy"></a></div><br>After modifying the code, I test it successfully.<p></p><p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;Test record</p><p></p><div><a href="https://1.bp.blogspot.com/-mUSP7p0uZdU/X6MObGCGyGI/AAAAAAAAAEs/Cnr7xCbZ9HAhEpb1P_NkkuiZXynJ3kw9QCLcBGAsYHQ/s982/test.jpg"><img src="https://1.bp.blogspot.com/-mUSP7p0uZdU/X6MObGCGyGI/AAAAAAAAAEs/Cnr7xCbZ9HAhEpb1P_NkkuiZXynJ3kw9QCLcBGAsYHQ/s320/test.jpg" loading="lazy"></a></div><br>Then, I create a <a href="https://gist.github.com/lixiaoqity/512c0170962a3a4750c465c5594c3f93">Gist</a> which includes DIFF(git diff) in my GitHub.<p></p><p>At last, I push my <a href="https://github.com/lixiaoqity/testLink/commit/6f3b6ef6480b99c17424a87d994496ef289ab8d0">new commit</a> of Link Check project to my GitHub.</p><p><br></p><p><br></p><p><br></p><p><br></p><p><br></p><p>Going out to hunt for issues still scare me a bit. Ironically, I find it easier to communicate with people face to face than I do online. This rather puts me in a difficult position given the planet’s current situation 😓. I’ll need to overcome this trepidation with communicating with strangers over the internet. The bad first experience with Rico really made me reluctant to look for any more projects. I have so much to learn and I was getting overwhelmed. The next pull request with OpenRefine was more bearable. The help and hints from the members in the comments were of great help. The next two pull requests involving documentation were fairly straightforward and much that was done was through setting up the project and understanding what the code was doing. Both were smaller projects and I hope they continue to develop. Before starting off with Release 0.2, I thought that I would be forced to work on only big projects. But these small projects still exist and some are looking for help. One of the greatest challenges that I’ve had is getting the code that’s functioning on my machine to pass through the tests in the repo. It’s akin to submitting work through Seneca’s matrix. You may think that you’ve completed all the work just right only for a bunch of errors to show up during the build. I’ll try to get more experience with interpreting the logs from these compilers. Since I found OpenRefine to be a good experience, I may try looking more into their project and contributing more to it. And if not with this repo, I’ll need to try and expand further and learn to be more discerning of what issues to tackle so that I’m not overwhelmed but am still challenged. I still have to build my skills and my confidence to be able to contribute more meaningfully.</p><img src="https://medium.com/_/stat?event=post.clientViewed&amp;referrerSource=full_rss&amp;postId=a352afc23aae" loading="lazy"><p>I’m still fairly new at Python. However, I wanted to find an interesting project to work on. When looking for a project, I found another project looking for documentation. Documentation; it’s something everyone appreciates but no one actually wants to write it. I understand this to some extent. Proofreading and fixing typos in the documentation doesn’t give the same thrill as fixing typos in code and subsequently getting the project to build properly. However, it’s still necessary. This <a href="https://github.com/anshulhub/Car-Game/issues/3">issue</a> also involves adding a more extensive readme to the project. Seeing as this project was a game, it was a bit more important to have a good readme to show users what the game actually looks like. I decided to take this issue on. Getting the project to set up was simpler as I had to really only get one library from the package manager; pygame. Though I had some difficulties getting the virtual environment to work it was soon running. This was the first-ever game project that I really looked at and I am still impressed by how small python programs can be. There are a couple more issues on this project that I may take on just so I could learn a bit more about pygame and possibly write a couple simple games should I ever find the time for it. <a href="https://github.com/anshulhub/Car-Game/pull/7">Writing the readme</a> wasn’t too difficult as it involved collecting the images from the game and adding it into the readme file. I also made sure to specify the dependencies that the project needed as I recalled working with other people’s python projects and the difficulties I went through trying to get them to work. It was overall pretty straightforward. I would like to learn more about game development in python though and may keep an eye on this project because of it. It might be interesting to recreate something like&nbsp;Galaga.</p><img src="https://medium.com/_/stat?event=post.clientViewed&amp;referrerSource=full_rss&amp;postId=940fbb433651" loading="lazy">

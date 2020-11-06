@@ -2,6 +2,7 @@
 
 const fs = require('fs')
 const readline = require('readline')
+const fetch = require("node-fetch");
 const colors = require('colors')
 const request = require('request')
 const { url } = require('inspector')
@@ -39,13 +40,58 @@ if (argv3 != null) {
         if (argv3 === '-url' || argv3 === '/url') {
             request(argv4, function (error, response, body) {
                 if (response.statusCode === 200) { // only process url with statusCode 200
-                    
+
                     new Data(body).getURLandPrint()
 
                 } else {
                     console.log('Bad link'.red)
                 }
             })
+
+        } else if (argv3 === '-telescope' || argv3 === '/telescope') {
+
+            let telescopeUrl = argv4; // localhost:3000/posts
+            let outputFile = 'TLSDT.txt' // telescope data
+
+            fetch(telescopeUrl).then(response => {
+                return response.json();
+            }).then(data => {
+                console.log(data);
+                fs.truncate(outputFile, 0, function () {
+                    for (i = 0; i < data.length; i++) {
+                        fetch('http://localhost:3000' + data[i].url).then(res => {
+                            return res.json();
+                        }).then(content => {
+                            fs.appendFile(outputFile, content.html, (err) => {
+                                if (err) {
+                                    console.log(err);
+                                }
+                            });
+                        });
+                    }
+
+                })
+            })
+
+            try {
+                if (fs.existsSync(outputFile)) { // check if file exist
+                    (async () => {
+                        await fs.promises.readFile(outputFile)
+                            .then(function (data) {
+
+                                new Data(data).getURLandPrint();
+
+                            })
+                            .catch(function (error) {
+                                console.log(error)
+                            })
+                    })()
+                } else {
+                    console.log('File not found!')
+                }
+            } catch (err) {
+                console.error(err)
+            }
 
         } else if (argv3 === '-w' || argv3 === '/w') {
             // This is for searching webpage in wayback machine
@@ -137,9 +183,9 @@ if (argv3 != null) {
                                     finalURLs = finalURLs.filter(url => {
                                         let flag = true
                                         for (let i = 0; i < lists.length; i++) {
-                                            if (url.includes(lists[i])){
+                                            if (url.includes(lists[i])) {
                                                 flag = false
-                                            } 
+                                            }
                                         }
                                         return flag
                                     })
@@ -166,7 +212,7 @@ if (argv3 != null) {
         } else { // for local file process, read and process
             let filename = argv3
 
-            util.readFiles(filename).then( urls => {
+            util.readFiles(filename).then(urls => {
                 new Data(urls).getURLandPrint()
             })
 
