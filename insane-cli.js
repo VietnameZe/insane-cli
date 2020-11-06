@@ -2,12 +2,12 @@
 
 const fs = require('fs')
 const readline = require('readline')
-const fetch = require("node-fetch");
+const fetch = require("node-fetch")
 const colors = require('colors')
 const request = require('request')
 const { url } = require('inspector')
-const { Data } = require('./data');
-const { Util } = require('./util');
+const { Data } = require('./data')
+const { Util } = require('./util')
 const { readFiles } = require('./util')
 const util = require('./util')
 
@@ -54,20 +54,18 @@ if (argv3 != null) {
             let outputFile = 'TLSDT.txt' // telescope data
 
             fetch(telescopeUrl).then(response => {
-                return response.json();
+                return response.json()
             }).then(data => {
-                console.log(data);
+                console.log(data)
                 fs.truncate(outputFile, 0, function () {
-                    for (i = 0; i < data.length; i++) {
+                    for (let i = 0; i < data.length; i++) {
                         fetch('http://localhost:3000' + data[i].url).then(res => {
-                            return res.json();
+                            return res.json()
                         }).then(content => {
                             fs.appendFile(outputFile, content.html, (err) => {
-                                if (err) {
-                                    console.log(err);
-                                }
-                            });
-                        });
+                                if (err) console.log(err)
+                            })
+                        })
                     }
 
                 })
@@ -146,7 +144,6 @@ if (argv3 != null) {
             }
 
         } else if (argv3 === '--all' || argv3 === '--good' || argv3 === '--bad') {
-            ///////////////
 
             let filename = argv4
 
@@ -171,7 +168,9 @@ if (argv3 != null) {
             }
 
         } else if (argv4 === '-i' || argv4 === '--ignore') {
+            
             readIgnoreFile().then(lists => {
+                
                 let filename = argv3
 
                 try {
@@ -230,7 +229,7 @@ function printURLStatusByFlag(urls, flag) {
         try {
             request(urls[i], { method: 'HEAD', timeout: 1800 }, function (error, response, body) {
 
-                //console.error('error:', error);
+                //console.error('error:', error)
                 let status = response && response.statusCode
                 if (status !== null) {
                     // if (status === 200) {
@@ -288,7 +287,7 @@ function getObj(input) {
         try {
             request(input, { method: 'HEAD', timeout: 1800 }, function (error, response, body) {
 
-                //console.error('error:', error);
+                //console.error('error:', error)
                 let status = response && response.statusCode
                 if (status !== null) {
                     var obj = {
