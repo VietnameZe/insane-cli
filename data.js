@@ -17,7 +17,7 @@ class Data {
   }
 
   // Calculate the average for the set of numbers
-  getURLs(data) {
+  static getURLs(data) {
     let finalURLs = [];
     // console.log(data + "Xxxxxxxxx")
     let tempArr = data.toString().split(/[({\\<"^`|>})]/);
@@ -40,6 +40,30 @@ class Data {
     finalURLs = [...new Set(finalURLs)];
     return finalURLs;
   }
+
+
+
+  static getStatus(url) {
+
+    return new Promise(function(resolve, reject) {
+      request(url, { method: "HEAD", timeout: 1800 }, function (
+        error,
+        response,
+        body
+      ) {
+        
+        let status = response && response.statusCode;
+        if (status !== null) {
+          resolve(status);
+          
+        }
+      });
+      
+    });
+  }
+
+
+
   printURLStatus(urls) {
     for (let i = urls.length; i--; ) {
       try {
