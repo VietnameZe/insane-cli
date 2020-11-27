@@ -49,4 +49,4 @@ In rare case, you might need executive permission for `insane-cli.js`. If proble
 
 
 ## Run test & Code Coverage
-```npm test```
+```npm test``` 
