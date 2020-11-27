@@ -46,3 +46,7 @@ Prettier & ESLint in 'extension' section.
 You need to use `npm link` in `insane-cli` directory to run CLI in form: `insane-cli <args-see-below>`.
 Otherwise you can use syntax: `node insane-cli <args-see-below>` to run.
 In rare case, you might need executive permission for `insane-cli.js`. If problem occurs, use `chmod +x insane-cli.js`
+
+
+## Run test & Code Coverage
+```npm test```
