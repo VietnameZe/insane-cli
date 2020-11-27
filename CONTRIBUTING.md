@@ -48,5 +48,8 @@ Otherwise you can use syntax: `node insane-cli <args-see-below>` to run.
 In rare case, you might need executive permission for `insane-cli.js`. If problem occurs, use `chmod +x insane-cli.js`
 
 
-## Run test & Code Coverage
-```npm test``` 
+## Run test with Mocha only
+```npm testmocha``` 
+
+## Run test with Mocha & Code Coverage
+```npm test```
