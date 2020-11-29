@@ -41,87 +41,31 @@ class Data {
     return finalURLs;
   }
 
-
-
   static getStatus(url) {
-
-    return new Promise(function(resolve, reject) {
-      request(url, { method: "HEAD", timeout: 1800 }, function (
-        error,
-        response,
-        body
-      ) {
-        
-        let status = response && response.statusCode;
-        if (status !== null) {
-          resolve(status);
-          
+    return new Promise(function (resolve, reject) {
+      request(
+        url,
+        { method: "HEAD", timeout: 1800 },
+        function (error, response, body) {
+          let status = response && response.statusCode;
+          if (status !== null) {
+            resolve(status);
+          }
         }
-      });
-      
+      );
     });
   }
-
-
 
   printURLStatus(urls) {
     for (let i = urls.length; i--; ) {
       try {
-        request(urls[i], { method: "HEAD", timeout: 1800 }, function (
-          error,
-          response,
-          body
-        ) {
-          //console.error('error:', error);
-          let status = response && response.statusCode;
-          if (status !== null) {
-            if (status === 200) {
-              console.log("[" + status + "]GOOD - " + urls[i].green);
-            } else if (status === 400 || status === 404) {
-              console.log("[" + status + "]BAD - " + urls[i].red);
-            } else if (status === 301 || status === 307 || status === 308) {
-              console.log("[" + status + "]REDIRECT - " + urls[i].blue);
-            } else {
-              console.log("UNKNOWN - " + urls[i].grey);
-            }
-          }
-        });
-      } catch (error) {
-        console.error("WTF - " + urls[i].yellow);
-      }
-    }
-  }
-  printURLStatusByFlag(flag) {
-    let urls = this.getURLs(this.dts);
-
-    for (let i = urls.length; i--; ) {
-      try {
-        request(urls[i], { method: "HEAD", timeout: 1800 }, function (
-          error,
-          response,
-          body
-        ) {
-          //console.error('error:', error);
-          let status = response && response.statusCode;
-          if (status !== null) {
-            // if (status === 200) {
-            //     console.log('[' + status + ']GOOD - ' + urls[i].green)
-            // } else if (status === 400 || status === 404) {
-            //     console.log('[' + status + ']BAD - ' + urls[i].red)
-            // } else if (status === 301 || status === 307 || status === 308) {
-            //     console.log('[' + status + ']REDIRECT - ' + urls[i].blue)
-            // } else {
-            //     console.log('UNKNOWN - ' + urls[i].grey)
-            // }
-            if (flag === "--good") {
-              if (status === 200) {
-                console.log("[" + status + "]GOOD - " + urls[i].green);
-              }
-            } else if (flag === "--bad") {
-              if (status === 400 || status === 404) {
-                console.log("[" + status + "]BAD - " + urls[i].red);
-              }
-            } else if (flag === "--all") {
+        request(
+          urls[i],
+          { method: "HEAD", timeout: 1800 },
+          function (error, response, body) {
+            //console.error('error:', error);
+            let status = response && response.statusCode;
+            if (status !== null) {
               if (status === 200) {
                 console.log("[" + status + "]GOOD - " + urls[i].green);
               } else if (status === 400 || status === 404) {
@@ -133,7 +77,55 @@ class Data {
               }
             }
           }
-        });
+        );
+      } catch (error) {
+        console.error("WTF - " + urls[i].yellow);
+      }
+    }
+  }
+  printURLStatusByFlag(flag) {
+    let urls = this.getURLs(this.dts);
+
+    for (let i = urls.length; i--; ) {
+      try {
+        request(
+          urls[i],
+          { method: "HEAD", timeout: 1800 },
+          function (error, response, body) {
+            //console.error('error:', error);
+            let status = response && response.statusCode;
+            if (status !== null) {
+              // if (status === 200) {
+              //     console.log('[' + status + ']GOOD - ' + urls[i].green)
+              // } else if (status === 400 || status === 404) {
+              //     console.log('[' + status + ']BAD - ' + urls[i].red)
+              // } else if (status === 301 || status === 307 || status === 308) {
+              //     console.log('[' + status + ']REDIRECT - ' + urls[i].blue)
+              // } else {
+              //     console.log('UNKNOWN - ' + urls[i].grey)
+              // }
+              if (flag === "--good") {
+                if (status === 200) {
+                  console.log("[" + status + "]GOOD - " + urls[i].green);
+                }
+              } else if (flag === "--bad") {
+                if (status === 400 || status === 404) {
+                  console.log("[" + status + "]BAD - " + urls[i].red);
+                }
+              } else if (flag === "--all") {
+                if (status === 200) {
+                  console.log("[" + status + "]GOOD - " + urls[i].green);
+                } else if (status === 400 || status === 404) {
+                  console.log("[" + status + "]BAD - " + urls[i].red);
+                } else if (status === 301 || status === 307 || status === 308) {
+                  console.log("[" + status + "]REDIRECT - " + urls[i].blue);
+                } else {
+                  console.log("UNKNOWN - " + urls[i].grey);
+                }
+              }
+            }
+          }
+        );
       } catch (error) {
         console.error("WTF - " + urls[i].yellow);
       }

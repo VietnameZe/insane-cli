@@ -14,6 +14,7 @@ npm i --save colors request
 ```
 
 ## Install Prettier
+
 ```
 npm install --save-dev --save-exact prettier
 
@@ -21,8 +22,8 @@ npm install --save-dev --save-exact prettier
 npx prettier --write .
 ```
 
-
 ## Install ESLint
+
 ```
 npm install eslint --save-dev
 
@@ -35,11 +36,10 @@ npx eslint fileName.js
 ```
 
 ## Install Prettier & ESLint extension for VS Code
-```
-Prettier & ESLint in 'extension' section. 
-```
 
-
+```
+Prettier & ESLint in 'extension' section.
+```
 
 ## To run globally
 
@@ -47,9 +47,10 @@ You need to use `npm link` in `insane-cli` directory to run CLI in form: `insane
 Otherwise you can use syntax: `node insane-cli <args-see-below>` to run.
 In rare case, you might need executive permission for `insane-cli.js`. If problem occurs, use `chmod +x insane-cli.js`
 
-
 ## Run test with Mocha only
-```npm testmocha``` 
+
+`npm testmocha`
 
 ## Run test with Mocha & Code Coverage
-```npm test```
+
+`npm test`
