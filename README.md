@@ -3,7 +3,10 @@
 ## Run program
 
 ```
-// help
+// INSTALL
+npm install insane-cli
+
+// HELP
 insane-cli
 
 // check insane-cli version
