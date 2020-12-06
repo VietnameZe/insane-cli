@@ -1,1 +1,14 @@
-{"processes":{"7708b03f-413e-45e1-937e-99ab7df304cd":{"parent":null,"children":[]}},"files":{"/Users/huynguyen/Desktop/insane-cli/data.js":["7708b03f-413e-45e1-937e-99ab7df304cd"],"/Users/huynguyen/Desktop/insane-cli/util.js":["7708b03f-413e-45e1-937e-99ab7df304cd"]},"externalIds":{}}
+{
+  "processes": {
+    "7708b03f-413e-45e1-937e-99ab7df304cd": { "parent": null, "children": [] }
+  },
+  "files": {
+    "/Users/huynguyen/Desktop/insane-cli/data.js": [
+      "7708b03f-413e-45e1-937e-99ab7df304cd"
+    ],
+    "/Users/huynguyen/Desktop/insane-cli/util.js": [
+      "7708b03f-413e-45e1-937e-99ab7df304cd"
+    ]
+  },
+  "externalIds": {}
+}

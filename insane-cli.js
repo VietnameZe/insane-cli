@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const readline = require('readline');
-const fetch = require('node-fetch');
-const colors = require('colors');
-const request = require('request');
-const { Data } = require('./data');
-const util = require('./util');
+const fs = require("fs");
+const readline = require("readline");
+const fetch = require("node-fetch");
+const colors = require("colors");
+const request = require("request");
+const { Data } = require("./data");
+const util = require("./util");
 
 // wayback api
-const waybackApi = 'http://archive.org/wayback/available?';
+const waybackApi = "http://archive.org/wayback/available?";
 
 // let filename = process.argv[2]
 // if(process.argv.length === 3)
@@ -25,7 +25,7 @@ const readIgnoreFile = async () => {
 
   // eslint-disable-next-line no-restricted-syntax
   for await (const line of rl) {
-    if (!line.startsWith('#')) {
+    if (!line.startsWith("#")) {
       ignoreURL.push(line);
     }
   }
@@ -222,44 +222,44 @@ if (argv3 != null) {
 function printURLStatusByFlag(urls, flag) {
   for (let i = urls.length; i--; ) {
     try {
-      request(urls[i], { method: "HEAD", timeout: 1800 }, function (
-        error,
-        response,
-        body
-      ) {
-        //console.error('error:', error)
-        let status = response && response.statusCode;
-        if (status !== null) {
-          // if (status === 200) {
-          //     console.log('[' + status + ']GOOD - ' + urls[i].green)
-          // } else if (status === 400 || status === 404) {
-          //     console.log('[' + status + ']BAD - ' + urls[i].red)
-          // } else if (status === 301 || status === 307 || status === 308) {
-          //     console.log('[' + status + ']REDIRECT - ' + urls[i].blue)
-          // } else {
-          //     console.log('UNKNOWN - ' + urls[i].grey)
-          // }
-          if (flag === "--good") {
-            if (status === 200) {
-              console.log("[" + status + "]GOOD - " + urls[i].green);
-            }
-          } else if (flag === "--bad") {
-            if (status === 400 || status === 404) {
-              console.log("[" + status + "]BAD - " + urls[i].red);
-            }
-          } else if (flag === "--all") {
-            if (status === 200) {
-              console.log("[" + status + "]GOOD - " + urls[i].green);
-            } else if (status === 400 || status === 404) {
-              console.log("[" + status + "]BAD - " + urls[i].red);
-            } else if (status === 301 || status === 307 || status === 308) {
-              console.log("[" + status + "]REDIRECT - " + urls[i].blue);
-            } else {
-              console.log("UNKNOWN - " + urls[i].grey);
+      request(
+        urls[i],
+        { method: "HEAD", timeout: 1800 },
+        function (error, response, body) {
+          //console.error('error:', error)
+          let status = response && response.statusCode;
+          if (status !== null) {
+            // if (status === 200) {
+            //     console.log('[' + status + ']GOOD - ' + urls[i].green)
+            // } else if (status === 400 || status === 404) {
+            //     console.log('[' + status + ']BAD - ' + urls[i].red)
+            // } else if (status === 301 || status === 307 || status === 308) {
+            //     console.log('[' + status + ']REDIRECT - ' + urls[i].blue)
+            // } else {
+            //     console.log('UNKNOWN - ' + urls[i].grey)
+            // }
+            if (flag === "--good") {
+              if (status === 200) {
+                console.log("[" + status + "]GOOD - " + urls[i].green);
+              }
+            } else if (flag === "--bad") {
+              if (status === 400 || status === 404) {
+                console.log("[" + status + "]BAD - " + urls[i].red);
+              }
+            } else if (flag === "--all") {
+              if (status === 200) {
+                console.log("[" + status + "]GOOD - " + urls[i].green);
+              } else if (status === 400 || status === 404) {
+                console.log("[" + status + "]BAD - " + urls[i].red);
+              } else if (status === 301 || status === 307 || status === 308) {
+                console.log("[" + status + "]REDIRECT - " + urls[i].blue);
+              } else {
+                console.log("UNKNOWN - " + urls[i].grey);
+              }
             }
           }
         }
-      });
+      );
     } catch (error) {
       console.error("WTF - " + urls[i].yellow);
     }
@@ -282,21 +282,21 @@ function printURLStatusInJSON(urls) {
 function getObj(input) {
   return new Promise((resolve, reject) => {
     try {
-      request(input, { method: "HEAD", timeout: 1800 }, function (
-        error,
-        response,
-        body
-      ) {
-        //console.error('error:', error)
-        let status = response && response.statusCode;
-        if (status !== null) {
-          var obj = {
-            url: input,
-            statuscode: status,
-          };
-          resolve(obj);
+      request(
+        input,
+        { method: "HEAD", timeout: 1800 },
+        function (error, response, body) {
+          //console.error('error:', error)
+          let status = response && response.statusCode;
+          if (status !== null) {
+            var obj = {
+              url: input,
+              statuscode: status,
+            };
+            resolve(obj);
+          }
         }
-      });
+      );
     } catch (error) {
       //console.error('WTF - ' + urls[i].yellow)
     }
